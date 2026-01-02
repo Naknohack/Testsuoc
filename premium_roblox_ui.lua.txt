@@ -1,0 +1,1113 @@
+
+
+local TweenService = game:GetService("TweenService")
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local CoreGui = game:GetService("CoreGui")
+
+local LocalPlayer = Players.LocalPlayer
+
+-- ═══════════════════════════════════════════════════════════
+--                    PREMIUM THEME SYSTEM
+-- ═══════════════════════════════════════════════════════════
+
+local PremiumTheme = {
+    -- Primary Colors with Vibrant Gradients
+    Primary = {
+        Dark = Color3.fromRGB(10, 10, 15),
+        Main = Color3.fromRGB(15, 15, 25),
+        Light = Color3.fromRGB(25, 25, 40)
+    },
+    
+    -- Glassmorphic Elements
+    Glass = {
+        Main = Color3.fromRGB(35, 35, 55),
+        Border = Color3.fromRGB(75, 75, 100),
+        Blur = 0.92,
+        Transparency = 0.15
+    },
+    
+    -- Accent Colors - Holographic Style
+    Accent = {
+        Cyan = Color3.fromRGB(0, 255, 255),
+        Purple = Color3.fromRGB(150, 50, 255),
+        Pink = Color3.fromRGB(255, 50, 150),
+        Blue = Color3.fromRGB(50, 150, 255),
+        Gold = Color3.fromRGB(255, 215, 0)
+    },
+    
+    -- Text Hierarchy
+    Text = {
+        Primary = Color3.fromRGB(255, 255, 255),
+        Secondary = Color3.fromRGB(200, 200, 220),
+        Tertiary = Color3.fromRGB(150, 150, 170),
+        Disabled = Color3.fromRGB(100, 100, 120)
+    },
+    
+    -- Status Colors
+    Status = {
+        Success = Color3.fromRGB(50, 255, 150),
+        Warning = Color3.fromRGB(255, 200, 50),
+        Error = Color3.fromRGB(255, 80, 80),
+        Info = Color3.fromRGB(80, 180, 255)
+    }
+}
+
+-- ═══════════════════════════════════════════════════════════
+--                    ANIMATION PRESETS
+-- ═══════════════════════════════════════════════════════════
+
+local Animations = {
+    -- Smooth entrance animation
+    FadeIn = function(element, duration)
+        duration = duration or 0.4
+        element.GroupTransparency = 1
+        
+        local tween = TweenService:Create(element, 
+            TweenInfo.new(duration, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
+            {GroupTransparency = 0}
+        )
+        tween:Play()
+        return tween
+    end,
+    
+    -- Scale bounce effect
+    ScaleBounce = function(element, scale)
+        scale = scale or 1.05
+        local originalSize = element.Size
+        
+        local expandTween = TweenService:Create(element,
+            TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            {Size = UDim2.new(originalSize.X.Scale * scale, 0, originalSize.Y.Scale * scale, 0)}
+        )
+        
+        expandTween:Play()
+        expandTween.Completed:Connect(function()
+            local shrinkTween = TweenService:Create(element,
+                TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+                {Size = originalSize}
+            )
+            shrinkTween:Play()
+        end)
+    end,
+    
+    -- Glow effect on hover
+    GlowEffect = function(element, glowColor, intensity)
+        intensity = intensity or 1
+        local uiStroke = element:FindFirstChildOfClass("UIStroke")
+        
+        if uiStroke then
+            TweenService:Create(uiStroke,
+                TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                {
+                    Color = glowColor,
+                    Thickness = 2 * intensity,
+                    Transparency = 0.3
+                }
+            ):Play()
+        end
+    end,
+    
+    -- Remove glow effect
+    RemoveGlow = function(element, originalColor)
+        local uiStroke = element:FindFirstChildOfClass("UIStroke")
+        
+        if uiStroke then
+            TweenService:Create(uiStroke,
+                TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+                {
+                    Color = originalColor,
+                    Thickness = 1,
+                    Transparency = 0.7
+                }
+            ):Play()
+        end
+    end
+}
+
+-- ═══════════════════════════════════════════════════════════
+--                    UTILITY FUNCTIONS
+-- ═══════════════════════════════════════════════════════════
+
+local Utils = {}
+
+-- Create gradient with multiple colors
+function Utils.CreateGradient(parent, colorSequence, rotation)
+    rotation = rotation or 0
+    local gradient = Instance.new("UIGradient")
+    gradient.Color = colorSequence
+    gradient.Rotation = rotation
+    gradient.Parent = parent
+    return gradient
+end
+
+-- Create corner radius
+function Utils.CreateCorner(parent, radius)
+    radius = radius or UDim.new(0, 12)
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = radius
+    corner.Parent = parent
+    return corner
+end
+
+-- Create stroke/border
+function Utils.CreateStroke(parent, color, thickness, transparency)
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = color or PremiumTheme.Glass.Border
+    stroke.Thickness = thickness or 1
+    stroke.Transparency = transparency or 0.7
+    stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    stroke.Parent = parent
+    return stroke
+end
+
+-- Create padding
+function Utils.CreatePadding(parent, padding)
+    local uiPadding = Instance.new("UIPadding")
+    uiPadding.PaddingTop = UDim.new(0, padding)
+    uiPadding.PaddingBottom = UDim.new(0, padding)
+    uiPadding.PaddingLeft = UDim.new(0, padding)
+    uiPadding.PaddingRight = UDim.new(0, padding)
+    uiPadding.Parent = parent
+    return uiPadding
+end
+
+-- Create text label with premium styling
+function Utils.CreateText(parent, text, textSize, textColor, font)
+    local label = Instance.new("TextLabel")
+    label.Text = text
+    label.TextSize = textSize or 14
+    label.TextColor3 = textColor or PremiumTheme.Text.Primary
+    label.Font = font or Enum.Font.GothamBold
+    label.BackgroundTransparency = 1
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = parent
+    return label
+end
+
+-- ═══════════════════════════════════════════════════════════
+--                    MAIN UI CONSTRUCTOR
+-- ═══════════════════════════════════════════════════════════
+
+local QuantumUI = {}
+QuantumUI.__index = QuantumUI
+
+function QuantumUI.new(config)
+    local self = setmetatable({}, QuantumUI)
+    
+    config = config or {}
+    self.Title = config.Title or "Quantum Nexus"
+    self.Subtitle = config.Subtitle or "Premium Script Hub"
+    self.Size = config.Size or UDim2.new(0, 650, 0, 480)
+    
+    -- Create ScreenGui
+    self.ScreenGui = Instance.new("ScreenGui")
+    self.ScreenGui.Name = "QuantumNexusUI"
+    self.ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    self.ScreenGui.ResetOnSpawn = false
+    
+    -- Protection
+    if syn and syn.protect_gui then
+        syn.protect_gui(self.ScreenGui)
+    elseif gethui then
+        self.ScreenGui.Parent = gethui()
+    else
+        self.ScreenGui.Parent = CoreGui
+    end
+    
+    self:CreateMainFrame()
+    self:CreateHeader()
+    self:CreateSidebar()
+    self:CreateContentArea()
+    self:CreateAnimatedBackground()
+    
+    return self
+end
+
+-- ═══════════════════════════════════════════════════════════
+--                    MAIN FRAME
+-- ═══════════════════════════════════════════════════════════
+
+function QuantumUI:CreateMainFrame()
+    -- Main container
+    self.MainFrame = Instance.new("Frame")
+    self.MainFrame.Name = "MainContainer"
+    self.MainFrame.Size = self.Size
+    self.MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+    self.MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+    self.MainFrame.BackgroundColor3 = PremiumTheme.Primary.Main
+    self.MainFrame.BackgroundTransparency = PremiumTheme.Glass.Transparency
+    self.MainFrame.BorderSizePixel = 0
+    self.MainFrame.Parent = self.ScreenGui
+    
+    -- Premium corner radius
+    Utils.CreateCorner(self.MainFrame, UDim.new(0, 16))
+    
+    -- Glassmorphic border
+    Utils.CreateStroke(self.MainFrame, PremiumTheme.Glass.Border, 2, 0.5)
+    
+    -- Holographic gradient overlay
+    local gradientSequence = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, PremiumTheme.Accent.Cyan),
+        ColorSequenceKeypoint.new(0.3, PremiumTheme.Accent.Purple),
+        ColorSequenceKeypoint.new(0.6, PremiumTheme.Accent.Pink),
+        ColorSequenceKeypoint.new(1, PremiumTheme.Accent.Blue)
+    }
+    
+    local overlayFrame = Instance.new("Frame")
+    overlayFrame.Name = "GradientOverlay"
+    overlayFrame.Size = UDim2.new(1, 0, 1, 0)
+    overlayFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    overlayFrame.BackgroundTransparency = 0.95
+    overlayFrame.BorderSizePixel = 0
+    overlayFrame.ZIndex = 0
+    overlayFrame.Parent = self.MainFrame
+    
+    Utils.CreateCorner(overlayFrame, UDim.new(0, 16))
+    Utils.CreateGradient(overlayFrame, gradientSequence, 45)
+    
+    -- Animate gradient rotation
+    task.spawn(function()
+        local gradient = overlayFrame:FindFirstChildOfClass("UIGradient")
+        if gradient then
+            while self.MainFrame.Parent do
+                for i = 0, 360, 2 do
+                    if not self.MainFrame.Parent then break end
+                    gradient.Rotation = i
+                    task.wait(0.05)
+                end
+            end
+        end
+    end)
+    
+    -- Make draggable
+    self:MakeDraggable(self.MainFrame)
+    
+    -- Entrance animation
+    Animations.FadeIn(self.MainFrame, 0.6)
+end
+
+-- ═══════════════════════════════════════════════════════════
+--                    HEADER SECTION
+-- ═══════════════════════════════════════════════════════════
+
+function QuantumUI:CreateHeader()
+    local headerHeight = 65
+    
+    -- Header container
+    local header = Instance.new("Frame")
+    header.Name = "Header"
+    header.Size = UDim2.new(1, 0, 0, headerHeight)
+    header.BackgroundColor3 = PremiumTheme.Glass.Main
+    header.BackgroundTransparency = 0.3
+    header.BorderSizePixel = 0
+    header.Parent = self.MainFrame
+    
+    Utils.CreateCorner(header, UDim.new(0, 16))
+    
+    -- Header bottom border
+    local headerBorder = Instance.new("Frame")
+    headerBorder.Size = UDim2.new(1, -30, 0, 1)
+    headerBorder.Position = UDim2.new(0, 15, 1, -1)
+    headerBorder.BackgroundColor3 = PremiumTheme.Glass.Border
+    headerBorder.BackgroundTransparency = 0.5
+    headerBorder.BorderSizePixel = 0
+    headerBorder.Parent = header
+    
+    -- Logo/Icon container
+    local logoContainer = Instance.new("Frame")
+    logoContainer.Size = UDim2.new(0, 45, 0, 45)
+    logoContainer.Position = UDim2.new(0, 15, 0.5, 0)
+    logoContainer.AnchorPoint = Vector2.new(0, 0.5)
+    logoContainer.BackgroundColor3 = PremiumTheme.Accent.Cyan
+    logoContainer.BackgroundTransparency = 0.1
+    logoContainer.BorderSizePixel = 0
+    logoContainer.Parent = header
+    
+    Utils.CreateCorner(logoContainer, UDim.new(0, 10))
+    Utils.CreateStroke(logoContainer, PremiumTheme.Accent.Cyan, 2, 0.3)
+    
+    -- Animated gradient for logo
+    Utils.CreateGradient(logoContainer, ColorSequence.new{
+        ColorSequenceKeypoint.new(0, PremiumTheme.Accent.Cyan),
+        ColorSequenceKeypoint.new(1, PremiumTheme.Accent.Purple)
+    }, 45)
+    
+    -- Logo icon (Q symbol)
+    local logoText = Utils.CreateText(logoContainer, "Q", 28, PremiumTheme.Text.Primary, Enum.Font.GothamBold)
+    logoText.Size = UDim2.new(1, 0, 1, 0)
+    logoText.TextXAlignment = Enum.TextXAlignment.Center
+    logoText.TextYAlignment = Enum.TextYAlignment.Center
+    
+    -- Title text
+    local titleLabel = Utils.CreateText(header, self.Title, 20, PremiumTheme.Text.Primary, Enum.Font.GothamBold)
+    titleLabel.Position = UDim2.new(0, 70, 0, 12)
+    titleLabel.Size = UDim2.new(0, 300, 0, 24)
+    
+    -- Subtitle
+    local subtitleLabel = Utils.CreateText(header, self.Subtitle, 12, PremiumTheme.Text.Secondary, Enum.Font.Gotham)
+    subtitleLabel.Position = UDim2.new(0, 70, 0, 36)
+    subtitleLabel.Size = UDim2.new(0, 300, 0, 16)
+    
+    -- Close button
+    self:CreateCloseButton(header)
+    
+    -- Minimize button
+    self:CreateMinimizeButton(header)
+end
+
+function QuantumUI:CreateCloseButton(parent)
+    local closeBtn = Instance.new("TextButton")
+    closeBtn.Name = "CloseButton"
+    closeBtn.Size = UDim2.new(0, 35, 0, 35)
+    closeBtn.Position = UDim2.new(1, -50, 0.5, 0)
+    closeBtn.AnchorPoint = Vector2.new(0, 0.5)
+    closeBtn.BackgroundColor3 = PremiumTheme.Status.Error
+    closeBtn.BackgroundTransparency = 0.2
+    closeBtn.BorderSizePixel = 0
+    closeBtn.Text = "✕"
+    closeBtn.TextColor3 = PremiumTheme.Text.Primary
+    closeBtn.TextSize = 18
+    closeBtn.Font = Enum.Font.GothamBold
+    closeBtn.Parent = parent
+    
+    Utils.CreateCorner(closeBtn, UDim.new(0, 8))
+    Utils.CreateStroke(closeBtn, PremiumTheme.Status.Error, 1, 0.6)
+    
+    -- Hover effect
+    closeBtn.MouseEnter:Connect(function()
+        Animations.GlowEffect(closeBtn, PremiumTheme.Status.Error, 1.5)
+        TweenService:Create(closeBtn, TweenInfo.new(0.2), {BackgroundTransparency = 0}):Play()
+    end)
+    
+    closeBtn.MouseLeave:Connect(function()
+        Animations.RemoveGlow(closeBtn, PremiumTheme.Status.Error)
+        TweenService:Create(closeBtn, TweenInfo.new(0.2), {BackgroundTransparency = 0.2}):Play()
+    end)
+    
+    closeBtn.MouseButton1Click:Connect(function()
+        Animations.ScaleBounce(closeBtn, 0.9)
+        task.wait(0.2)
+        
+        local closeTween = TweenService:Create(self.MainFrame,
+            TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+            {Size = UDim2.new(0, 0, 0, 0), GroupTransparency = 1}
+        )
+        closeTween:Play()
+        closeTween.Completed:Connect(function()
+            self.ScreenGui:Destroy()
+        end)
+    end)
+end
+
+function QuantumUI:CreateMinimizeButton(parent)
+    local minimizeBtn = Instance.new("TextButton")
+    minimizeBtn.Name = "MinimizeButton"
+    minimizeBtn.Size = UDim2.new(0, 35, 0, 35)
+    minimizeBtn.Position = UDim2.new(1, -90, 0.5, 0)
+    minimizeBtn.AnchorPoint = Vector2.new(0, 0.5)
+    minimizeBtn.BackgroundColor3 = PremiumTheme.Accent.Blue
+    minimizeBtn.BackgroundTransparency = 0.2
+    minimizeBtn.BorderSizePixel = 0
+    minimizeBtn.Text = "—"
+    minimizeBtn.TextColor3 = PremiumTheme.Text.Primary
+    minimizeBtn.TextSize = 18
+    minimizeBtn.Font = Enum.Font.GothamBold
+    minimizeBtn.Parent = parent
+    
+    Utils.CreateCorner(minimizeBtn, UDim.new(0, 8))
+    Utils.CreateStroke(minimizeBtn, PremiumTheme.Accent.Blue, 1, 0.6)
+    
+    -- Hover effect
+    minimizeBtn.MouseEnter:Connect(function()
+        Animations.GlowEffect(minimizeBtn, PremiumTheme.Accent.Blue, 1.5)
+        TweenService:Create(minimizeBtn, TweenInfo.new(0.2), {BackgroundTransparency = 0}):Play()
+    end)
+    
+    minimizeBtn.MouseLeave:Connect(function()
+        Animations.RemoveGlow(minimizeBtn, PremiumTheme.Accent.Blue)
+        TweenService:Create(minimizeBtn, TweenInfo.new(0.2), {BackgroundTransparency = 0.2}):Play()
+    end)
+    
+    self.isMinimized = false
+    minimizeBtn.MouseButton1Click:Connect(function()
+        Animations.ScaleBounce(minimizeBtn, 0.9)
+        self.isMinimized = not self.isMinimized
+        
+        local targetSize = self.isMinimized and UDim2.new(0, 650, 0, 65) or self.Size
+        local targetTransparency = self.isMinimized and 0.5 or 1
+        
+        TweenService:Create(self.MainFrame,
+            TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            {Size = targetSize}
+        ):Play()
+    end)
+end
+
+-- ═══════════════════════════════════════════════════════════
+--                    SIDEBAR NAVIGATION
+-- ═══════════════════════════════════════════════════════════
+
+function QuantumUI:CreateSidebar()
+    local sidebarWidth = 180
+    
+    self.Sidebar = Instance.new("Frame")
+    self.Sidebar.Name = "Sidebar"
+    self.Sidebar.Size = UDim2.new(0, sidebarWidth, 1, -80)
+    self.Sidebar.Position = UDim2.new(0, 15, 0, 75)
+    self.Sidebar.BackgroundColor3 = PremiumTheme.Glass.Main
+    self.Sidebar.BackgroundTransparency = 0.4
+    self.Sidebar.BorderSizePixel = 0
+    self.Sidebar.Parent = self.MainFrame
+    
+    Utils.CreateCorner(self.Sidebar, UDim.new(0, 12))
+    Utils.CreateStroke(self.Sidebar, PremiumTheme.Glass.Border, 1, 0.7)
+    
+    -- Sidebar list layout
+    local listLayout = Instance.new("UIListLayout")
+    listLayout.Padding = UDim.new(0, 8)
+    listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    listLayout.Parent = self.Sidebar
+    
+    Utils.CreatePadding(self.Sidebar, 10)
+    
+    self.Tabs = {}
+    self.ActiveTab = nil
+end
+
+function QuantumUI:AddTab(tabName, icon)
+    local tabIndex = #self.Tabs + 1
+    
+    local tabButton = Instance.new("TextButton")
+    tabButton.Name = tabName .. "Tab"
+    tabButton.Size = UDim2.new(1, 0, 0, 45)
+    tabButton.BackgroundColor3 = PremiumTheme.Primary.Light
+    tabButton.BackgroundTransparency = 0.6
+    tabButton.BorderSizePixel = 0
+    tabButton.Text = ""
+    tabButton.Parent = self.Sidebar
+    
+    Utils.CreateCorner(tabButton, UDim.new(0, 8))
+    
+    local stroke = Utils.CreateStroke(tabButton, PremiumTheme.Glass.Border, 1, 0.8)
+    
+    -- Icon
+    local iconLabel = Utils.CreateText(tabButton, icon or "◆", 18, PremiumTheme.Text.Secondary, Enum.Font.GothamBold)
+    iconLabel.Size = UDim2.new(0, 30, 1, 0)
+    iconLabel.Position = UDim2.new(0, 10, 0, 0)
+    iconLabel.TextXAlignment = Enum.TextXAlignment.Center
+    
+    -- Tab name
+    local nameLabel = Utils.CreateText(tabButton, tabName, 14, PremiumTheme.Text.Primary, Enum.Font.GothamSemibold)
+    nameLabel.Size = UDim2.new(1, -50, 1, 0)
+    nameLabel.Position = UDim2.new(0, 40, 0, 0)
+    
+    -- Create content container for this tab
+    local tabContent = Instance.new("ScrollingFrame")
+    tabContent.Name = tabName .. "Content"
+    tabContent.Size = UDim2.new(1, -30, 1, 0)
+    tabContent.Position = UDim2.new(0, 15, 0, 0)
+    tabContent.BackgroundTransparency = 1
+    tabContent.BorderSizePixel = 0
+    tabContent.ScrollBarThickness = 6
+    tabContent.ScrollBarImageColor3 = PremiumTheme.Accent.Cyan
+    tabContent.Visible = false
+    tabContent.CanvasSize = UDim2.new(0, 0, 0, 0)
+    tabContent.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    tabContent.Parent = self.ContentArea
+    
+    local contentLayout = Instance.new("UIListLayout")
+    contentLayout.Padding = UDim.new(0, 12)
+    contentLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    contentLayout.Parent = tabContent
+    
+    -- Store tab data
+    table.insert(self.Tabs, {
+        Button = tabButton,
+        Content = tabContent,
+        Name = tabName,
+        Icon = iconLabel,
+        NameLabel = nameLabel,
+        Stroke = stroke
+    })
+    
+    -- Hover effects
+    tabButton.MouseEnter:Connect(function()
+        if self.ActiveTab ~= tabIndex then
+            TweenService:Create(tabButton, TweenInfo.new(0.2), {BackgroundTransparency = 0.3}):Play()
+            Animations.GlowEffect(tabButton, PremiumTheme.Accent.Cyan, 0.8)
+        end
+    end)
+    
+    tabButton.MouseLeave:Connect(function()
+        if self.ActiveTab ~= tabIndex then
+            TweenService:Create(tabButton, TweenInfo.new(0.2), {BackgroundTransparency = 0.6}):Play()
+            Animations.RemoveGlow(tabButton, PremiumTheme.Glass.Border)
+        end
+    end)
+    
+    -- Click handler
+    tabButton.MouseButton1Click:Connect(function()
+        self:SwitchTab(tabIndex)
+    end)
+    
+    -- Auto-select first tab
+    if tabIndex == 1 then
+        self:SwitchTab(1)
+    end
+    
+    return tabContent
+end
+
+function QuantumUI:SwitchTab(tabIndex)
+    -- Deactivate current tab
+    if self.ActiveTab then
+        local oldTab = self.Tabs[self.ActiveTab]
+        TweenService:Create(oldTab.Button, TweenInfo.new(0.3), {BackgroundTransparency = 0.6}):Play()
+        TweenService:Create(oldTab.Icon, TweenInfo.new(0.3), {TextColor3 = PremiumTheme.Text.Secondary}):Play()
+        TweenService:Create(oldTab.Stroke, TweenInfo.new(0.3), {Transparency = 0.8}):Play()
+        oldTab.Content.Visible = false
+    end
+    
+    -- Activate new tab
+    local newTab = self.Tabs[tabIndex]
+    TweenService:Create(newTab.Button, TweenInfo.new(0.3), {BackgroundTransparency = 0.1}):Play()
+    TweenService:Create(newTab.Icon, TweenInfo.new(0.3), {TextColor3 = PremiumTheme.Accent.Cyan}):Play()
+    TweenService:Create(newTab.Stroke, TweenInfo.new(0.3), {
+        Color = PremiumTheme.Accent.Cyan,
+        Transparency = 0.3,
+        Thickness = 2
+    }):Play()
+    
+    newTab.Content.Visible = true
+    self.ActiveTab = tabIndex
+    
+    -- Bounce animation
+    Animations.ScaleBounce(newTab.Button, 1.03)
+end
+
+-- ═══════════════════════════════════════════════════════════
+--                    CONTENT AREA
+-- ═══════════════════════════════════════════════════════════
+
+function QuantumUI:CreateContentArea()
+    self.ContentArea = Instance.new("Frame")
+    self.ContentArea.Name = "ContentArea"
+    self.ContentArea.Size = UDim2.new(1, -225, 1, -95)
+    self.ContentArea.Position = UDim2.new(0, 210, 0, 80)
+    self.ContentArea.BackgroundTransparency = 1
+    self.ContentArea.BorderSizePixel = 0
+    self.ContentArea.Parent = self.MainFrame
+end
+
+-- ═══════════════════════════════════════════════════════════
+--                    UI ELEMENTS
+-- ═══════════════════════════════════════════════════════════
+
+function QuantumUI:AddButton(parent, config)
+    config = config or {}
+    
+    local button = Instance.new("TextButton")
+    button.Name = config.Name or "Button"
+    button.Size = UDim2.new(1, 0, 0, 42)
+    button.BackgroundColor3 = PremiumTheme.Glass.Main
+    button.BackgroundTransparency = 0.3
+    button.BorderSizePixel = 0
+    button.Text = ""
+    button.Parent = parent
+    
+    Utils.CreateCorner(button, UDim.new(0, 10))
+    local stroke = Utils.CreateStroke(button, PremiumTheme.Glass.Border, 1, 0.7)
+    
+    -- Button text
+    local buttonText = Utils.CreateText(button, config.Text or "Button", 14, PremiumTheme.Text.Primary, Enum.Font.GothamSemibold)
+    buttonText.Size = UDim2.new(1, -20, 1, 0)
+    buttonText.Position = UDim2.new(0, 10, 0, 0)
+    buttonText.TextXAlignment = Enum.TextXAlignment.Center
+    
+    -- Gradient overlay
+    if config.Gradient ~= false then
+        local gradSeq = ColorSequence.new{
+            ColorSequenceKeypoint.new(0, PremiumTheme.Accent.Cyan),
+            ColorSequenceKeypoint.new(1, PremiumTheme.Accent.Purple)
+        }
+        
+        local overlay = Instance.new("Frame")
+        overlay.Size = UDim2.new(1, 0, 1, 0)
+        overlay.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        overlay.BackgroundTransparency = 0.93
+        overlay.BorderSizePixel = 0
+        overlay.Parent = button
+        
+        Utils.CreateCorner(overlay, UDim.new(0, 10))
+        Utils.CreateGradient(overlay, gradSeq, 45)
+    end
+    
+    -- Hover effects
+    button.MouseEnter:Connect(function()
+        TweenService:Create(button, TweenInfo.new(0.2), {BackgroundTransparency = 0.1}):Play()
+        Animations.GlowEffect(button, PremiumTheme.Accent.Cyan, 1.2)
+    end)
+    
+    button.MouseLeave:Connect(function()
+        TweenService:Create(button, TweenInfo.new(0.2), {BackgroundTransparency = 0.3}):Play()
+        Animations.RemoveGlow(button, PremiumTheme.Glass.Border)
+    end)
+    
+    -- Click effect
+    button.MouseButton1Click:Connect(function()
+        Animations.ScaleBounce(button, 0.97)
+        if config.Callback then
+            config.Callback()
+        end
+    end)
+    
+    return button
+end
+
+function QuantumUI:AddToggle(parent, config)
+    config = config or {}
+    
+    local toggleFrame = Instance.new("Frame")
+    toggleFrame.Name = config.Name or "Toggle"
+    toggleFrame.Size = UDim2.new(1, 0, 0, 42)
+    toggleFrame.BackgroundColor3 = PremiumTheme.Glass.Main
+    toggleFrame.BackgroundTransparency = 0.3
+    toggleFrame.BorderSizePixel = 0
+    toggleFrame.Parent = parent
+    
+    Utils.CreateCorner(toggleFrame, UDim.new(0, 10))
+    Utils.CreateStroke(toggleFrame, PremiumTheme.Glass.Border, 1, 0.7)
+    
+    -- Toggle label
+    local label = Utils.CreateText(toggleFrame, config.Text or "Toggle", 14, PremiumTheme.Text.Primary, Enum.Font.GothamSemibold)
+    label.Size = UDim2.new(1, -70, 1, 0)
+    label.Position = UDim2.new(0, 15, 0, 0)
+    label.TextYAlignment = Enum.TextYAlignment.Center
+    
+    -- Toggle switch container
+    local switchContainer = Instance.new("Frame")
+    switchContainer.Size = UDim2.new(0, 50, 0, 26)
+    switchContainer.Position = UDim2.new(1, -60, 0.5, 0)
+    switchContainer.AnchorPoint = Vector2.new(0, 0.5)
+    switchContainer.BackgroundColor3 = PremiumTheme.Primary.Dark
+    switchContainer.BackgroundTransparency = 0.2
+    switchContainer.BorderSizePixel = 0
+    switchContainer.Parent = toggleFrame
+    
+    Utils.CreateCorner(switchContainer, UDim.new(1, 0))
+    Utils.CreateStroke(switchContainer, PremiumTheme.Glass.Border, 1, 0.6)
+    
+    -- Toggle circle
+    local toggleCircle = Instance.new("Frame")
+    toggleCircle.Size = UDim2.new(0, 20, 0, 20)
+    toggleCircle.Position = UDim2.new(0, 3, 0.5, 0)
+    toggleCircle.AnchorPoint = Vector2.new(0, 0.5)
+    toggleCircle.BackgroundColor3 = PremiumTheme.Text.Tertiary
+    toggleCircle.BorderSizePixel = 0
+    toggleCircle.Parent = switchContainer
+    
+    Utils.CreateCorner(toggleCircle, UDim.new(1, 0))
+    
+    local circleStroke = Utils.CreateStroke(toggleCircle, PremiumTheme.Glass.Border, 2, 0.5)
+    
+    -- Toggle state
+    local isToggled = config.Default or false
+    
+    local function updateToggle(toggled, animate)
+        isToggled = toggled
+        
+        local targetPos = toggled and UDim2.new(1, -23, 0.5, 0) or UDim2.new(0, 3, 0.5, 0)
+        local targetColor = toggled and PremiumTheme.Accent.Cyan or PremiumTheme.Text.Tertiary
+        local bgColor = toggled and PremiumTheme.Accent.Cyan or PremiumTheme.Primary.Dark
+        
+        if animate then
+            TweenService:Create(toggleCircle, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {
+                Position = targetPos,
+                BackgroundColor3 = targetColor
+            }):Play()
+            
+            TweenService:Create(switchContainer, TweenInfo.new(0.3), {
+                BackgroundColor3 = bgColor,
+                BackgroundTransparency = toggled and 0.4 or 0.2
+            }):Play()
+            
+            TweenService:Create(circleStroke, TweenInfo.new(0.3), {
+                Color = targetColor,
+                Transparency = toggled and 0.3 or 0.5
+            }):Play()
+        else
+            toggleCircle.Position = targetPos
+            toggleCircle.BackgroundColor3 = targetColor
+            switchContainer.BackgroundColor3 = bgColor
+            switchContainer.BackgroundTransparency = toggled and 0.4 or 0.2
+            circleStroke.Color = targetColor
+            circleStroke.Transparency = toggled and 0.3 or 0.5
+        end
+        
+        if config.Callback then
+            config.Callback(isToggled)
+        end
+    end
+    
+    -- Initialize
+    updateToggle(isToggled, false)
+    
+    -- Click handler
+    local button = Instance.new("TextButton")
+    button.Size = UDim2.new(1, 0, 1, 0)
+    button.BackgroundTransparency = 1
+    button.Text = ""
+    button.Parent = toggleFrame
+    
+    button.MouseButton1Click:Connect(function()
+        updateToggle(not isToggled, true)
+        Animations.ScaleBounce(switchContainer, 1.1)
+    end)
+    
+    return toggleFrame
+end
+
+function QuantumUI:AddSlider(parent, config)
+    config = config or {}
+    
+    local sliderFrame = Instance.new("Frame")
+    sliderFrame.Name = config.Name or "Slider"
+    sliderFrame.Size = UDim2.new(1, 0, 0, 55)
+    sliderFrame.BackgroundColor3 = PremiumTheme.Glass.Main
+    sliderFrame.BackgroundTransparency = 0.3
+    sliderFrame.BorderSizePixel = 0
+    sliderFrame.Parent = parent
+    
+    Utils.CreateCorner(sliderFrame, UDim.new(0, 10))
+    Utils.CreateStroke(sliderFrame, PremiumTheme.Glass.Border, 1, 0.7)
+    Utils.CreatePadding(sliderFrame, 12)
+    
+    -- Slider label
+    local label = Utils.CreateText(sliderFrame, config.Text or "Slider", 14, PremiumTheme.Text.Primary, Enum.Font.GothamSemibold)
+    label.Size = UDim2.new(1, -60, 0, 18)
+    label.Position = UDim2.new(0, 0, 0, 0)
+    
+    -- Value display
+    local valueLabel = Utils.CreateText(sliderFrame, tostring(config.Default or config.Min or 0), 13, PremiumTheme.Accent.Cyan, Enum.Font.GothamBold)
+    valueLabel.Size = UDim2.new(0, 50, 0, 18)
+    valueLabel.Position = UDim2.new(1, -50, 0, 0)
+    valueLabel.TextXAlignment = Enum.TextXAlignment.Right
+    
+    -- Slider rail
+    local sliderRail = Instance.new("Frame")
+    sliderRail.Size = UDim2.new(1, 0, 0, 6)
+    sliderRail.Position = UDim2.new(0, 0, 1, -10)
+    sliderRail.BackgroundColor3 = PremiumTheme.Primary.Dark
+    sliderRail.BackgroundTransparency = 0.3
+    sliderRail.BorderSizePixel = 0
+    sliderRail.Parent = sliderFrame
+    
+    Utils.CreateCorner(sliderRail, UDim.new(1, 0))
+    
+    -- Slider fill
+    local sliderFill = Instance.new("Frame")
+    sliderFill.Size = UDim2.new(0, 0, 1, 0)
+    sliderFill.BackgroundColor3 = PremiumTheme.Accent.Cyan
+    sliderFill.BackgroundTransparency = 0.2
+    sliderFill.BorderSizePixel = 0
+    sliderFill.Parent = sliderRail
+    
+    Utils.CreateCorner(sliderFill, UDim.new(1, 0))
+    
+    -- Gradient on fill
+    Utils.CreateGradient(sliderFill, ColorSequence.new{
+        ColorSequenceKeypoint.new(0, PremiumTheme.Accent.Cyan),
+        ColorSequenceKeypoint.new(1, PremiumTheme.Accent.Purple)
+    }, 90)
+    
+    -- Slider knob
+    local sliderKnob = Instance.new("Frame")
+    sliderKnob.Size = UDim2.new(0, 16, 0, 16)
+    sliderKnob.Position = UDim2.new(0, 0, 0.5, 0)
+    sliderKnob.AnchorPoint = Vector2.new(0.5, 0.5)
+    sliderKnob.BackgroundColor3 = PremiumTheme.Accent.Cyan
+    sliderKnob.BorderSizePixel = 0
+    sliderKnob.Parent = sliderRail
+    
+    Utils.CreateCorner(sliderKnob, UDim.new(1, 0))
+    local knobStroke = Utils.CreateStroke(sliderKnob, PremiumTheme.Accent.Cyan, 2, 0.3)
+    
+    -- Slider logic
+    local minValue = config.Min or 0
+    local maxValue = config.Max or 100
+    local increment = config.Increment or 1
+    local currentValue = config.Default or minValue
+    
+    local function updateSlider(value, animate)
+        value = math.clamp(value, minValue, maxValue)
+        value = math.floor((value - minValue) / increment + 0.5) * increment + minValue
+        currentValue = value
+        
+        local percentage = (value - minValue) / (maxValue - minValue)
+        valueLabel.Text = tostring(value)
+        
+        if animate then
+            TweenService:Create(sliderFill, TweenInfo.new(0.2), {
+                Size = UDim2.new(percentage, 0, 1, 0)
+            }):Play()
+            
+            TweenService:Create(sliderKnob, TweenInfo.new(0.2), {
+                Position = UDim2.new(percentage, 0, 0.5, 0)
+            }):Play()
+        else
+            sliderFill.Size = UDim2.new(percentage, 0, 1, 0)
+            sliderKnob.Position = UDim2.new(percentage, 0, 0.5, 0)
+        end
+        
+        if config.Callback then
+            config.Callback(value)
+        end
+    end
+    
+    -- Initialize
+    updateSlider(currentValue, false)
+    
+    -- Dragging
+    local dragging = false
+    
+    sliderRail.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or 
+           input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            
+            local function update()
+                local mousePos = UserInputService:GetMouseLocation().X
+                local railPos = sliderRail.AbsolutePosition.X
+                local railSize = sliderRail.AbsoluteSize.X
+                
+                local percentage = math.clamp((mousePos - railPos) / railSize, 0, 1)
+                local value = minValue + (maxValue - minValue) * percentage
+                
+                updateSlider(value, true)
+            end
+            
+            update()
+            
+            local connection
+            connection = input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                    connection:Disconnect()
+                end
+            end)
+        end
+    end)
+    
+    sliderRail.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or
+                        input.UserInputType == Enum.UserInputType.Touch) then
+            local mousePos = UserInputService:GetMouseLocation().X
+            local railPos = sliderRail.AbsolutePosition.X
+            local railSize = sliderRail.AbsoluteSize.X
+            
+            local percentage = math.clamp((mousePos - railPos) / railSize, 0, 1)
+            local value = minValue + (maxValue - minValue) * percentage
+            
+            updateSlider(value, false)
+        end
+    end)
+    
+    -- Hover effect
+    sliderRail.MouseEnter:Connect(function()
+        TweenService:Create(sliderKnob, TweenInfo.new(0.2), {Size = UDim2.new(0, 20, 0, 20)}):Play()
+        Animations.GlowEffect(sliderKnob, PremiumTheme.Accent.Cyan, 1.5)
+    end)
+    
+    sliderRail.MouseLeave:Connect(function()
+        if not dragging then
+            TweenService:Create(sliderKnob, TweenInfo.new(0.2), {Size = UDim2.new(0, 16, 0, 16)}):Play()
+            Animations.RemoveGlow(sliderKnob, PremiumTheme.Accent.Cyan)
+        end
+    end)
+    
+    return sliderFrame
+end
+
+function QuantumUI:AddLabel(parent, config)
+    config = config or {}
+    
+    local labelFrame = Instance.new("Frame")
+    labelFrame.Name = config.Name or "Label"
+    labelFrame.Size = UDim2.new(1, 0, 0, 35)
+    labelFrame.BackgroundColor3 = PremiumTheme.Glass.Main
+    labelFrame.BackgroundTransparency = 0.5
+    labelFrame.BorderSizePixel = 0
+    labelFrame.Parent = parent
+    
+    Utils.CreateCorner(labelFrame, UDim.new(0, 8))
+    Utils.CreateStroke(labelFrame, PremiumTheme.Glass.Border, 1, 0.8)
+    
+    local label = Utils.CreateText(labelFrame, config.Text or "Label", 13, PremiumTheme.Text.Secondary, Enum.Font.Gotham)
+    label.Size = UDim2.new(1, -20, 1, 0)
+    label.Position = UDim2.new(0, 10, 0, 0)
+    label.TextXAlignment = Enum.TextXAlignment.Center
+    label.TextYAlignment = Enum.TextYAlignment.Center
+    
+    return labelFrame
+end
+
+-- ═══════════════════════════════════════════════════════════
+--                    ANIMATED BACKGROUND
+-- ═══════════════════════════════════════════════════════════
+
+function QuantumUI:CreateAnimatedBackground()
+    -- Particle effects container
+    local particleContainer = Instance.new("Frame")
+    particleContainer.Name = "ParticleEffect"
+    particleContainer.Size = UDim2.new(1, 0, 1, 0)
+    particleContainer.BackgroundTransparency = 1
+    particleContainer.BorderSizePixel = 0
+    particleContainer.ZIndex = -1
+    particleContainer.Parent = self.MainFrame
+    
+    Utils.CreateCorner(particleContainer, UDim.new(0, 16))
+    
+    -- Create animated particles
+    for i = 1, 15 do
+        local particle = Instance.new("Frame")
+        particle.Size = UDim2.new(0, math.random(2, 4), 0, math.random(2, 4))
+        particle.Position = UDim2.new(math.random(), 0, math.random(), 0)
+        particle.BackgroundColor3 = PremiumTheme.Accent.Cyan
+        particle.BackgroundTransparency = 0.7
+        particle.BorderSizePixel = 0
+        particle.Parent = particleContainer
+        
+        Utils.CreateCorner(particle, UDim.new(1, 0))
+        
+        -- Animate particles
+        task.spawn(function()
+            while particle.Parent do
+                local randomX = math.random()
+                local randomY = math.random()
+                local duration = math.random(8, 15)
+                
+                TweenService:Create(particle, TweenInfo.new(duration, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+                    Position = UDim2.new(randomX, 0, randomY, 0),
+                    BackgroundTransparency = math.random(5, 9) / 10
+                }):Play()
+                
+                task.wait(duration)
+            end
+        end)
+    end
+end
+
+-- ═══════════════════════════════════════════════════════════
+--                    DRAGGABLE FUNCTIONALITY
+-- ═══════════════════════════════════════════════════════════
+
+function QuantumUI:MakeDraggable(frame)
+    local dragging = false
+    local dragInput, mousePos, framePos
+    
+    frame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or 
+           input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            mousePos = input.Position
+            framePos = frame.Position
+            
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+    
+    frame.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or
+           input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+    
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            local delta = input.Position - mousePos
+            frame.Position = UDim2.new(
+                framePos.X.Scale,
+                framePos.X.Offset + delta.X,
+                framePos.Y.Scale,
+                framePos.Y.Offset + delta.Y
+            )
+        end
+    end)
+end
+
+-- ═══════════════════════════════════════════════════════════
+--                    NOTIFICATION SYSTEM
+-- ═══════════════════════════════════════════════════════════
+
+function QuantumUI:Notify(config)
+    config = config or {}
+    
+    local notifContainer = Instance.new("Frame")
+    notifContainer.Size = UDim2.new(0, 320, 0, 80)
+    notifContainer.Position = UDim2.new(1, -340, 1, 100)
+    notifContainer.BackgroundColor3 = PremiumTheme.Glass.Main
+    notifContainer.BackgroundTransparency = 0.1
+    notifContainer.BorderSizePixel = 0
+    notifContainer.Parent = self.ScreenGui
+    
+    Utils.CreateCorner(notifContainer, UDim.new(0, 12))
+    Utils.CreateStroke(notifContainer, PremiumTheme.Glass.Border, 2, 0.5)
+    Utils.CreatePadding(notifContainer, 15)
+    
+    -- Gradient overlay based on type
+    local notifColor = PremiumTheme.Status.Info
+    if config.Type == "success" then notifColor = PremiumTheme.Status.Success
+    elseif config.Type == "warning" then notifColor = PremiumTheme.Status.Warning
+    elseif config.Type == "error" then notifColor = PremiumTheme.Status.Error
+    end
+    
+    local accentBar = Instance.new("Frame")
+    accentBar.Size = UDim2.new(0, 4, 1, 0)
+    accentBar.Position = UDim2.new(0, 0, 0, 0)
+    accentBar.BackgroundColor3 = notifColor
+    accentBar.BorderSizePixel = 0
+    accentBar.Parent = notifContainer
+    
+    Utils.CreateCorner(accentBar, UDim.new(1, 0))
+    
+    -- Title
+    local titleLabel = Utils.CreateText(notifContainer, config.Title or "Notification", 15, PremiumTheme.Text.Primary, Enum.Font.GothamBold)
+    titleLabel.Size = UDim2.new(1, -20, 0, 20)
+    titleLabel.Position = UDim2.new(0, 15, 0, 0)
+    
+    -- Description
+    local descLabel = Utils.CreateText(notifContainer, config.Description or "", 12, PremiumTheme.Text.Secondary, Enum.Font.Gotham)
+    descLabel.Size = UDim2.new(1, -20, 0, 35)
+    descLabel.Position = UDim2.new(0, 15, 0, 25)
+    descLabel.TextWrapped = true
+    descLabel.TextYAlignment = Enum.TextYAlignment.Top
+    
+    -- Slide in animation
+    TweenService:Create(notifContainer, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+        Position = UDim2.new(1, -340, 1, -100)
+    }):Play()
+    
+    -- Auto dismiss
+    task.delay(config.Duration or 4, function()
+        TweenService:Create(notifContainer, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+            Position = UDim2.new(1, -340, 1, 100),
+            GroupTransparency = 1
+        }):Play()
+        
+        task.wait(0.5)
+        notifContainer:Destroy()
+    end)
+end
+
+-- ═══════════════════════════════════════════════════════════
+--                    RETURN MODULE
+-- ═══════════════════════════════════════════════════════════
+
+return QuantumUI
