@@ -1,0 +1,140 @@
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Naknohack/Testsuoc/refs/heads/main/ui%20BananaHub.lua.txt"))()
+
+-- Window
+local Window = Library:CreateWindow({
+    Title = "NhoiHub",
+    Desc = "Example UI",
+    Image = "rbxassetid://105245380363493"
+})
+
+-- Tab 
+local Tab1 = Window:AddTab("Main", "rbxassetid://7733960981") 
+local Section1 = Tab1:AddLeftGroupbox("General")
+
+-- Toggle
+Section1:AddToggle("Toggle1", {
+    Title = "Option 1",
+    Default = false,
+    Callback = function(Value)
+        print("Toggle 1:", Value)
+    end
+})
+
+-- Toggle
+Section1:AddToggle("Toggle2", {
+    Title = "Option 2",
+    Default = true,
+    Callback = function(Value)
+        print("Toggle 2:", Value)
+    end
+})
+
+-- Separator
+Section1:AddSeperator("Actions")
+
+-- Button
+Section1:AddButton({
+    Title = "Click Me",
+    Callback = function()
+        print("Button Clicked")
+    end
+})
+
+-- Button 
+Section1:AddButton({
+    Title = "Show Notification",
+    Callback = function()
+        Library:Notify({
+            Title = "Alert",
+            Desc = "Button was pressed!",
+            Duration = 3
+        })
+    end
+})
+
+-- Slider
+Section1:AddSlider({
+    Title = "Value Adjustment",
+    Min = 1,
+    Max = 100,
+    Default = 50,
+    Precise = false,
+    Callback = function(Value)
+        print("Slider:", Value)
+    end
+})
+
+-- Tab 
+local Tab2 = Window:AddTab("Settings", "rbxassetid://7733954611")
+local Section2 = Tab2:AddRightGroupbox("Configuration")
+
+-- Dropdown
+Section2:AddDropdown("Dropdown1", {
+    Title = "Select Type",
+    Values = {"Type A", "Type B", "Type C"},
+    Default = "Type A",
+    Multi = false,
+    Callback = function(Value)
+        print("Selected:", Value)
+    end
+})
+
+-- Dropdown 
+Section2:AddDropdown("Dropdown2", {
+    Title = "Search Item",
+    Values = {"Apple", "Banana", "Cherry", "Date"},
+    Default = "Banana",
+    Search = true,
+    Callback = function(Value)
+        print("Search:", Value)
+    end
+})
+
+-- Dropdown
+Section2:AddDropdown("Dropdown3", {
+    Title = "Multi Select",
+    Values = {"One", "Two", "Three", "Four"},
+    Default = {"One", "Three"},
+    Multi = true,
+    Callback = function(Value)
+        print("Multi:", Value)
+    end
+})
+
+-- Tab 
+local Tab3 = Window:AddTab("Misc", "rbxassetid://7733920644")
+local Section3 = Tab3:AddLeftGroupbox("Extra")
+
+-- Input
+Section3:AddInput("Input1", {
+    Title = "Text Field",
+    Placeholder = "Enter text...",
+    Default = "",
+    Callback = function(Text)
+        print("Input:", Text)
+    end
+})
+
+-- Keybind
+Section3:AddKeyBind({
+    Title = "Menu Key",
+    Default = Enum.KeyCode.RightShift,
+    Mode = "Toggle",
+    Callback = function(Value)
+        print("Keybind:", Value)
+    end
+})
+
+-- Separator
+Section3:AddSeperator("System")
+
+-- Label
+Section3:AddLabel("Status: Ready")
+
+-- Button
+Section3:AddButton({
+    Title = "Unload UI",
+    Callback = function()
+        Library:DestroyUI()
+    end
+})
