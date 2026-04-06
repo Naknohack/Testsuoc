@@ -147,13 +147,15 @@ _G.Time = 0  -- Thời gian hoạt động
 
 -- Định nghĩa thế giới và cấu hình đảo
 local World1, World2, World3 = false, false, false
+local placeId = game.PlaceId
 
-if game.PlaceId == 7449423635 then
+if placeId == 2753915549 or placeId == 85211729168715 then
+    World1 = true
+elseif placeId == 4442272183 or placeId == 79091703265657 then
+    World2 = true
+elseif placeId == 7449423635 or placeId == 10011733112357 then
     World3 = true
-else
-    game.Players.LocalPlayer:Kick("Chỉ hỗ trợ BF Sea 3")
-    return
-end 
+end
 
 -- Cấu hình đảo dựa trên thế giới
 local distbyp, island
